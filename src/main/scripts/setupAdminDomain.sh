@@ -470,7 +470,16 @@ function startTestServerAndValidateKeyStore()
         exit 1
    fi
 
-   export CERTVALIDATOR_JAR_EXEC_COMMAND="$JAVA_HOME/bin/java -jar ${KEYSTORE_TEMP_PATH}/certvalidator.jar $customIdentityKeyStoreType $customIdentityKeyStoreData $customIdentityKeyStorePassPhrase $serverPrivateKeyPassPhrase $customTrustKeyStoreType $customTrustKeyStoreData $customTrustKeyStorePassPhrase $customTrustKeyStorePassPhrase"
+   #decode keystore type as they are encoded and passed, but the validator expects them to be decoded
+   tempIdentityKeyStoreType=$(echo "$customIdentityKeyStoreType" | base64 --decode)
+   tempTrustKeyStoreType=$(echo "$customTrustKeyStoreType" | base64 --decode)
+
+   #decode keystore data as they are already encoded before storage in keyvault
+   tempCustomIdentityKeyStoreData=$(echo "$customIdentityKeyStoreData" | base64 --decode)
+   tempCustomTrustKeyStoreData=$(echo "$customTrustKeyStoreData" | base64 --decode)
+
+
+   export CERTVALIDATOR_JAR_EXEC_COMMAND="java -jar ${KEYSTORE_TEMP_PATH}/certvalidator.jar $tempIdentityKeyStoreType $tempCustomTrustKeyStoreData $customIdentityKeyStorePassPhrase $serverPrivateKeyPassPhrase $tempTrustKeyStoreType $tempCustomTrustKeyStoreData $customTrustKeyStorePassPhrase $customTrustKeyStorePassPhrase"
 
    echo "COMMAND: $CERTVALIDATOR_JAR_EXEC_COMMAND"
 
