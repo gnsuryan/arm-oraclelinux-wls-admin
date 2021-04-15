@@ -479,7 +479,7 @@ function startTestServerAndValidateKeyStore()
    tempCustomTrustKeyStoreData=$(echo "$customTrustKeyStoreData" | base64 --decode)
 
 
-   export CERTVALIDATOR_JAR_EXEC_COMMAND="java -jar ${KEYSTORE_TEMP_PATH}/certvalidator.jar \"$tempIdentityKeyStoreType\" \"$tempCustomIdentityKeyStoreData\" \"$customIdentityKeyStorePassPhrase\" \"$serverPrivateKeyPassPhrase\" \"$tempTrustKeyStoreType\" \"$tempCustomTrustKeyStoreData\" \"$customTrustKeyStorePassPhrase\" \"$customTrustKeyStorePassPhrase\""
+   export CERTVALIDATOR_JAR_EXEC_COMMAND=$(printf "%s %s %s %s %s %s %s %s %s" "java -jar ${KEYSTORE_TEMP_PATH}/certvalidator.jar" "$tempIdentityKeyStoreType" "$tempCustomIdentityKeyStoreData" "$customIdentityKeyStorePassPhrase" "$serverPrivateKeyPassPhrase" "$tempTrustKeyStoreType" "$tempCustomTrustKeyStoreData" "$customTrustKeyStorePassPhrase" "$customTrustKeyStorePassPhrase")
 
    echo "COMMAND: $CERTVALIDATOR_JAR_EXEC_COMMAND"
 
