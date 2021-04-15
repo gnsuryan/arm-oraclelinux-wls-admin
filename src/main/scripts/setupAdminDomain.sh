@@ -68,6 +68,7 @@ function cleanup()
     rm -rf $DOMAIN_PATH/weblogic-deploy
     rm -rf $DOMAIN_PATH/deploy-app.yaml
     rm -rf $DOMAIN_PATH/shoppingcart.zip
+    rm -rf $TEMP_DIR
  
     echo "Cleanup completed."
 }
@@ -422,6 +423,8 @@ function storeCustomSSLCerts()
 
         setupKeyStoreDir
 
+        startTestServerAndValidateKeyStore
+
         echo "Custom SSL is enabled. Storing CertInfo as files..."
         export customIdentityKeyStoreFileName="$KEYSTORE_PATH/identity.keystore"
         export customTrustKeyStoreFileName="$KEYSTORE_PATH/trust.keystore"
@@ -446,6 +449,41 @@ function storeCustomSSLCerts()
     else
         echo "Custom SSL is not enabled"
     fi
+}
+
+
+function startTestServerAndValidateKeyStore()
+{
+
+   export CERTVALIDATOR_JAR_DOWNLOAD_URL="https://github.com/wls-eng/arm-oraclelinux-wls/raw/develop/lib/certvalidator.jar"
+
+   mkdir -p ${KEYSTORE_TEMP_PATH}
+   sudo chown -R $username:$groupname $KEYSTORE_TEMP_PATH
+
+   cd ${KEYSTORE_TEMP_PATH}
+
+   wget -q -nv https://github.com/wls-eng/arm-oraclelinux-wls/raw/develop/lib/certvalidator.jar
+
+   if [ ! -f ${KEYSTORE_TEMP_PATH}/certvalidator.jar ];
+   then
+        echo_stderr "Error!! Failed to download certvalidator.jar "
+        exit 1
+   fi
+
+   export CERTVALIDATOR_JAR_EXEC_COMMAND="$JAVA_HOME/bin/java -jar ${KEYSTORE_TEMP_PATH}/certvalidator.jar $customIdentityKeyStoreType $customIdentityKeyStoreData $customIdentityKeyStorePassPhrase $serverPrivateKeyPassPhrase $customTrustKeyStoreType $customTrustKeyStoreData $customTrustKeyStorePassPhrase $customTrustKeyStorePassPhrase"
+
+   echo "COMMAND: $CERTVALIDATOR_JAR_EXEC_COMMAND"
+
+   runuser -l oracle -c ". $oracleHome/oracle_common/common/bin/setWlstEnv.sh; $CERTVALIDATOR_JAR_EXEC_COMMAND"
+
+   if [ $? != 0 ];
+   then
+       echo_stderr "Error!! SSL Certificate/KeyStore validation Failed when used while starting test Server"
+       exit 1
+   else
+       echo "Success !! SSL Certificate/KeyStore validation is successfull when used with test Server"
+       exit 0
+   fi
 }
 
 # Mount the Azure file share on all VMs created
@@ -526,6 +564,9 @@ validateInput
 installUtilities
 
 mountFileShare
+
+export TEMP_DIR="/u01/app/temp"
+export KEYSTORE_TEMP_PATH="${TEMP_DIR}/keystores"
 
 export KEYSTORE_PATH="${DOMAIN_PATH}/${wlsDomainName}/keystores"
 export WEBLOGIC_DEPLOY_TOOL=https://github.com/oracle/weblogic-deploy-tooling/releases/download/weblogic-deploy-tooling-1.8.1/weblogic-deploy.zip
