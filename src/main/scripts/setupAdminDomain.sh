@@ -471,12 +471,12 @@ function startTestServerAndValidateKeyStore()
    fi
 
    #decode keystore type as they are encoded and passed, but the validator expects them to be decoded
-   tempIdentityKeyStoreType=$(echo "$customIdentityKeyStoreType" | base64 --decode)
-   tempTrustKeyStoreType=$(echo "$customTrustKeyStoreType" | base64 --decode)
+   tempIdentityKeyStoreType=$(echo "$customIdentityKeyStoreType" | base64 --decode | tr -d '\n')
+   tempTrustKeyStoreType=$(echo "$customTrustKeyStoreType" | base64 --decode | tr -d '\n')
 
    #decode keystore data as they are already encoded before storage in keyvault
-   tempCustomIdentityKeyStoreData=$(echo "$customIdentityKeyStoreData" | base64 --decode)
-   tempCustomTrustKeyStoreData=$(echo "$customTrustKeyStoreData" | base64 --decode)
+   tempCustomIdentityKeyStoreData=$(echo "$customIdentityKeyStoreData" | base64 --decode | tr -d '\n')
+   tempCustomTrustKeyStoreData=$(echo "$customTrustKeyStoreData" | base64 --decode | tr -d '\n')
 
    export CERTVALIDATOR_INPUT_FILE="${KEYSTORE_TEMP_PATH}/input.properties"
 
