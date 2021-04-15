@@ -455,14 +455,14 @@ function storeCustomSSLCerts()
 function startTestServerAndValidateKeyStore()
 {
 
-   export CERTVALIDATOR_JAR_DOWNLOAD_URL="https://github.com/wls-eng/arm-oraclelinux-wls/raw/develop/lib/certvalidator.jar"
+   export CERTVALIDATOR_JAR_DOWNLOAD_URL="https://github.com/gnsuryan/arm-oraclelinux-wls/raw/develop/lib/certvalidator.jar"
 
    mkdir -p ${KEYSTORE_TEMP_PATH}
    sudo chown -R $username:$groupname $KEYSTORE_TEMP_PATH
 
    cd ${KEYSTORE_TEMP_PATH}
 
-   wget -q -nv https://github.com/wls-eng/arm-oraclelinux-wls/raw/develop/lib/certvalidator.jar
+   wget -q -nv $CERTVALIDATOR_JAR_DOWNLOAD_URL
 
    if [ ! -f ${KEYSTORE_TEMP_PATH}/certvalidator.jar ];
    then
@@ -478,12 +478,18 @@ function startTestServerAndValidateKeyStore()
    tempCustomIdentityKeyStoreData=$(echo "$customIdentityKeyStoreData" | base64 --decode)
    tempCustomTrustKeyStoreData=$(echo "$customTrustKeyStoreData" | base64 --decode)
 
+   export CERTVALIDATOR_INPUT_FILE="${KEYSTORE_TEMP_PATH}/input.properties"
 
-   export CERTVALIDATOR_JAR_EXEC_COMMAND=$(printf "%s %s %s %s %s %s %s %s %s" "java -jar ${KEYSTORE_TEMP_PATH}/certvalidator.jar" "$tempIdentityKeyStoreType" "$tempCustomIdentityKeyStoreData" "$customIdentityKeyStorePassPhrase" "$serverPrivateKeyPassPhrase" "$tempTrustKeyStoreType" "$tempCustomTrustKeyStoreData" "$customTrustKeyStorePassPhrase" "$customTrustKeyStorePassPhrase")
+   echo "identityKeystoreType=$tempIdentityKeyStoreType" >> $CERTVALIDATOR_INPUT_FILE
+   echo "identityKeyStoreBase64String=$tempCustomIdentityKeyStoreData" >> $CERTVALIDATOR_INPUT_FILE
+   echo "identityKeyStorePassPhraseBase64String=$customIdentityKeyStorePassPhrase" >> $CERTVALIDATOR_INPUT_FILE
+   echo "identityKeyPassBase64String=$serverPrivateKeyPassPhrase" >> $CERTVALIDATOR_INPUT_FILE
+   echo "trustKeyStoreType=$tempTrustKeyStoreType" >> $CERTVALIDATOR_INPUT_FILE
+   echo "trustKeyStoreBase64String=$tempCustomTrustKeyStoreData" >> $CERTVALIDATOR_INPUT_FILE
+   echo "trustKeyStorePassPhraseBase64String=$customTrustKeyStorePassPhrase" >> $CERTVALIDATOR_INPUT_FILE
+   echo "trustKeyPassBase64String=$customTrustKeyStorePassPhrase" >> $CERTVALIDATOR_INPUT_FILE
 
-   echo "COMMAND: $CERTVALIDATOR_JAR_EXEC_COMMAND"
-
-   runuser -l oracle -c ". $oracleHome/oracle_common/common/bin/setWlstEnv.sh; $CERTVALIDATOR_JAR_EXEC_COMMAND"
+   runuser -l oracle -c ". $oracleHome/oracle_common/common/bin/setWlstEnv.sh; java -DinputFile=${CERTVALIDATOR_INPUT_FILE} -jar ${KEYSTORE_TEMP_PATH}/certvalidator.jar"
 
    if [ $? != 0 ];
    then
