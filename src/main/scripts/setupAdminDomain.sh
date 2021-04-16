@@ -478,7 +478,6 @@ function startTestServerAndValidateKeyStore()
        exit 1
    else
        echo "Success !! SSL Certificate/KeyStore validation is successfull when used with test Server"
-       exit 0
    fi
 }
 
