@@ -423,8 +423,6 @@ function storeCustomSSLCerts()
 
         setupKeyStoreDir
 
-        startTestServerAndValidateKeyStore
-
         echo "Custom SSL is enabled. Storing CertInfo as files..."
         export customIdentityKeyStoreFileName="$KEYSTORE_PATH/identity.keystore"
         export customTrustKeyStoreFileName="$KEYSTORE_PATH/trust.keystore"
@@ -446,6 +444,8 @@ function storeCustomSSLCerts()
 
         validateSSLKeyStores
 
+        startTestServerAndValidateKeyStore
+
     else
         echo "Custom SSL is not enabled"
     fi
@@ -457,39 +457,20 @@ function startTestServerAndValidateKeyStore()
 
    export CERTVALIDATOR_JAR_DOWNLOAD_URL="https://github.com/gnsuryan/arm-oraclelinux-wls/raw/develop/lib/certvalidator.jar"
 
-   mkdir -p ${KEYSTORE_TEMP_PATH}
-   sudo chown -R $username:$groupname $KEYSTORE_TEMP_PATH
+   mkdir -p ${CERT_VALIDATOR_TEMP_PATH}
+   sudo chown -R $username:$groupname $CERT_VALIDATOR_TEMP_PATH
 
-   cd ${KEYSTORE_TEMP_PATH}
+   cd ${CERT_VALIDATOR_TEMP_PATH}
 
    wget -q -nv $CERTVALIDATOR_JAR_DOWNLOAD_URL
 
-   if [ ! -f ${KEYSTORE_TEMP_PATH}/certvalidator.jar ];
+   if [ ! -f ${CERT_VALIDATOR_TEMP_PATH}/certvalidator.jar ];
    then
         echo_stderr "Error!! Failed to download certvalidator.jar "
         exit 1
    fi
 
-   #decode keystore type as they are encoded and passed, but the validator expects them to be decoded
-   tempIdentityKeyStoreType=$(echo "$customIdentityKeyStoreType" | base64 --decode | tr -d '\n')
-   tempTrustKeyStoreType=$(echo "$customTrustKeyStoreType" | base64 --decode | tr -d '\n')
-
-   #decode keystore data as they are already encoded before storage in keyvault
-   tempCustomIdentityKeyStoreData=$(echo "$customIdentityKeyStoreData" | base64 --decode | tr -d '\n')
-   tempCustomTrustKeyStoreData=$(echo "$customTrustKeyStoreData" | base64 --decode | tr -d '\n')
-
-   export CERTVALIDATOR_INPUT_FILE="${KEYSTORE_TEMP_PATH}/input.properties"
-
-   echo "identityKeystoreType=$tempIdentityKeyStoreType" >> $CERTVALIDATOR_INPUT_FILE
-   echo "identityKeyStoreBase64String=$tempCustomIdentityKeyStoreData" >> $CERTVALIDATOR_INPUT_FILE
-   echo "identityKeyStorePassPhraseBase64String=$customIdentityKeyStorePassPhrase" >> $CERTVALIDATOR_INPUT_FILE
-   echo "identityKeyPassBase64String=$serverPrivateKeyPassPhrase" >> $CERTVALIDATOR_INPUT_FILE
-   echo "trustKeyStoreType=$tempTrustKeyStoreType" >> $CERTVALIDATOR_INPUT_FILE
-   echo "trustKeyStoreBase64String=$tempCustomTrustKeyStoreData" >> $CERTVALIDATOR_INPUT_FILE
-   echo "trustKeyStorePassPhraseBase64String=$customTrustKeyStorePassPhrase" >> $CERTVALIDATOR_INPUT_FILE
-   echo "trustKeyPassBase64String=$customTrustKeyStorePassPhrase" >> $CERTVALIDATOR_INPUT_FILE
-
-   runuser -l oracle -c ". $oracleHome/oracle_common/common/bin/setWlstEnv.sh; java -DinputFile=${CERTVALIDATOR_INPUT_FILE} -jar ${KEYSTORE_TEMP_PATH}/certvalidator.jar"
+   runuser -l oracle -c ". $oracleHome/oracle_common/common/bin/setWlstEnv.sh; java -jar ${CERT_VALIDATOR_TEMP_PATH}/certvalidator.jar $customIdentityKeyStoreType $customIdentityKeyStoreFileName $customIdentityKeyStorePassPhrase $serverPrivateKeyPassPhrase $customTrustKeyStoreType $customTrustKeyStoreFileName $customTrustKeyStorePassPhrase $customTrustKeyStorePassPhrase"
 
    if [ $? != 0 ];
    then
@@ -581,7 +562,7 @@ installUtilities
 mountFileShare
 
 export TEMP_DIR="/u01/app/temp"
-export KEYSTORE_TEMP_PATH="${TEMP_DIR}/keystores"
+export CERT_VALIDATOR_TEMP_PATH="${TEMP_DIR}/certvalidator"
 
 export KEYSTORE_PATH="${DOMAIN_PATH}/${wlsDomainName}/keystores"
 export WEBLOGIC_DEPLOY_TOOL=https://github.com/oracle/weblogic-deploy-tooling/releases/download/weblogic-deploy-tooling-1.8.1/weblogic-deploy.zip
