@@ -127,7 +127,7 @@
       {
          "type": "Microsoft.Resources/deployments",
          "apiVersion": "2020-06-01",
-         "name": "${post.deploy.ssl.config.end}",
+         "name": "post.deploy.ssl.config.end",
          "dependsOn": [
             "[resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('adminVMName'), 'newuserscript')]"
          ],
