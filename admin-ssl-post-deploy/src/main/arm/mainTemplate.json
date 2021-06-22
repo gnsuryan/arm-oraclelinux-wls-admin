@@ -88,7 +88,8 @@
       "const_hyphen": "-",
       "const_wlsHome": "/u01/app/wls/install/oracle/middleware/oracle_home",
       "const_wlsDomainPath": "/u01/domains",
-      "name_scriptFile": "configureCustomAdminSSL.sh"
+      "name_scriptFile": "configureCustomAdminSSL.sh",
+      "name_adminServerConfigurationTemplate": "configureSSLOnAdminServer.json"
    },
    "resources": [
       {
