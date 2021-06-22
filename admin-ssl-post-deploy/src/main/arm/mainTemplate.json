@@ -105,31 +105,57 @@
          }
       },
       {
-         "type": "Microsoft.Compute/virtualMachines/extensions",
-         "name": "[concat(parameters('adminVMName'),'/newuserscript')]",
-         "apiVersion": "2020-06-01",
-         "location": "[parameters('location')]",
-         "properties": {
-            "publisher": "Microsoft.Azure.Extensions",
-            "type": "CustomScript",
-            "typeHandlerVersion": "2.1",
-            "autoUpgradeMinorVersion": true,
-            "settings": {
-               "timestamp": "[int(parameters('deploy_timestamp'))]",
-               "fileUris": [
-                  "[uri(parameters('_artifactsLocation'), concat('scripts/', variables('name_scriptFile'), parameters('_artifactsLocationSasToken')))]"
-               ]
+        "name": "configureSSLForAdminServerTemplate",
+        "type": "Microsoft.Resources/deployments",
+        "apiVersion": "2020-06-01",
+        "condition": "[parameters('customSSLSettings').enable]",
+        "dependsOn": [
+            "[resourceId('Microsoft.Resources/deployments', 'post.deploy.ssl.config.start')]"
+        ],
+        "properties": {
+            "mode": "Incremental",
+            "templateLink": {
+                "uri": "[uri(parameters('_artifactsLocation'), concat('arm/nestedtemplates/', variables('name_adminServerConfigurationTemplate')))]",
+                "contentVersion": "1.0.0.0"
             },
-            "protectedSettings": {
-				"commandToExecute": "[concat('sh',' ',variables('name_scriptFile'),' ',parameters('adminVMName'),' ',parameters('wlsDomainName'),' ',parameters('wlsUserName'),' ',parameters('wlsPassword'),' ',variables('const_wlsHome'),' ',variables('const_wlsDomainPath'),' ', parameters('aadsSettings').enable,' ',if(parameters('aadsSettings').enable, parameters('aadsSettings').certificateBase64String, 'null'),' ', parameters('customSSLSettings').enable,' ',if(parameters('customSSLSettings').enable,parameters('customSSLSettings').customIdentityKeyStoreBase64String, 'null'),' ',if(parameters('customSSLSettings').enable,parameters('customSSLSettings').customIdentityKeyStorePassPhrase, 'null'),' ',if(parameters('customSSLSettings').enable,parameters('customSSLSettings').customIdentityKeyStoreType, 'null'),' ',if(parameters('customSSLSettings').enable,parameters('customSSLSettings').customTrustKeyStoreBase64String, 'null'),' ',if(parameters('customSSLSettings').enable,parameters('customSSLSettings').customTrustKeyStorePassPhrase, 'null'),' ',if(parameters('customSSLSettings').enable,parameters('customSSLSettings').customTrustKeyStoreType, 'null'),' ',if(parameters('customSSLSettings').enable,parameters('customSSLSettings').privateKeyAlias, 'null'),' ',if(parameters('customSSLSettings').enable,parameters('customSSLSettings').privateKeyPassPhrase, 'null'))]"            }
-         }
+            "parameters": {
+                "_artifactsLocation": {
+                    "value": "[parameters('_artifactsLocation')]"
+                },
+                "_artifactsLocationSasToken": {
+                    "value": "[parameters('_artifactsLocationSasToken')]"
+                },
+                "adminVMName": {
+                    "value": "[parameters('adminVMName')]"
+                },
+                "location": {
+                    "value": "[parameters('location')]"
+                },
+                "wlsDomainName": {
+                    "value": "[parameters('wlsDomainName')]"
+                },
+                "wlsUserName": {
+                    "value": "[parameters('wlsUserName')]"
+                },
+                "wlsPassword": {
+                    "value": "[parameters('wlsPassword')]"
+                },
+                "aadsSettings" : {
+                    "value": "[parameters('aadsSettings')]"
+                },
+                "customSSLSettings": {
+                    "value": "[parameters('customSSLSettings')]"
+                }
+             }
+          }
       },
       {
          "type": "Microsoft.Resources/deployments",
          "apiVersion": "2020-06-01",
          "name": "post.deploy.ssl.config.end",
          "dependsOn": [
-            "[resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('adminVMName'), 'newuserscript')]"
+            "[resourceId('Microsoft.Resources/deployments', 'post.deploy.ssl.config.start')]",
+            "[resourceId('Microsoft.Resources/deployments', 'configureSSLForAdminServerTemplate')]"
          ],
          "properties": {
             "mode": "Incremental",
